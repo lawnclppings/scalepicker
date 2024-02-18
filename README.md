@@ -1,4 +1,6 @@
 # Scalepicker
+![alt text](https://github.com/lawnclppings/scalepicker/blob/120c73052c730be230868212f2b3ee9867b51446/assets/linux.png)
+
 Random scale generator
 
 # Usage
