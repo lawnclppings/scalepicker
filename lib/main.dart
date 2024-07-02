@@ -33,7 +33,7 @@ class _MyAppState extends State<MyApp> {
   var keys = ["A", "B", "C", "D", "E", "F", "G", "A♭", "B♭", "D♭", "E♭", "G♭", "C♯"];
   var qualities = ["major", "minor"];
   var quotes = ["You can do this!", "Live, laugh, love.", "Your teacher will be proud.",
-    "Good luck!", "Nothing is impossible.", "No, this is Patrick!"];
+    "Good luck!", "Nothing is impossible.", "No, this is Patrick!", "Keep yourself safe", "Intonation..."];
   String quote = '';
   String scale = '';
 
