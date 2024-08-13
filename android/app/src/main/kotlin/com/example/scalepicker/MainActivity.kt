@@ -1,4 +1,4 @@
-package com.example.scalepicker
+package com.lawnclppings.scalepicker
 
 import io.flutter.embedding.android.FlutterActivity
 
