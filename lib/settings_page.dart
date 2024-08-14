@@ -5,10 +5,10 @@ class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
 
   @override
-  _SettingsPageState createState() => _SettingsPageState();
+  SettingsPageState createState() => SettingsPageState();
 }
 
-class _SettingsPageState extends State<SettingsPage> {
+class SettingsPageState extends State<SettingsPage> {
   bool _a = true;
   bool _ab = true;
   bool _b = true;
@@ -21,17 +21,19 @@ class _SettingsPageState extends State<SettingsPage> {
   bool _f = true;
   bool _fsharp = true;
   bool _g = true;
-  
-  
+
+  bool major = true;
+  bool minor = true;
+
   bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
-    _loadSettings();
+    loadSettings();
   }
 
-  Future<void> _loadSettings() async {
+  Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
     setState(() {
       _a = prefs.getBool('a') ?? true;
@@ -46,12 +48,15 @@ class _SettingsPageState extends State<SettingsPage> {
       _f = prefs.getBool('f') ?? true;
       _fsharp = prefs.getBool('fsharp') ?? true;
       _g = prefs.getBool('g') ?? true;
-      
+
+      major = prefs.getBool('major') ?? true;
+      minor = prefs.getBool('minor') ?? true;
+
       _isLoading = false;
     });
   }
 
-  Future<void> _saveSettings() async {
+  Future<void> saveSettings() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('a', _a);
     await prefs.setBool('ab', _ab);
@@ -65,6 +70,9 @@ class _SettingsPageState extends State<SettingsPage> {
     await prefs.setBool('f', _f);
     await prefs.setBool('fsharp', _fsharp);
     await prefs.setBool('g', _g);
+
+    await prefs.setBool('major', major);
+    await prefs.setBool('minor', minor);
   }
 
   @override
@@ -72,7 +80,7 @@ class _SettingsPageState extends State<SettingsPage> {
     if (_isLoading) {
       return Scaffold(
         appBar: AppBar(
-          title: const Text('Add or remove keys'),
+          title: const Text('Configuration'),
         ),
         body: const Center(
           child: CircularProgressIndicator(),
@@ -82,9 +90,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add or remove keys'),
+        title: const Text('Configuration'),
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,7 +104,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _a = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -106,7 +114,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _ab = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -116,7 +124,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _b = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -126,7 +134,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _bb = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -136,7 +144,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _c = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -146,7 +154,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _csharp = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -156,7 +164,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _d = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -166,7 +174,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _e = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -176,7 +184,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _eb = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -186,7 +194,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _f = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -196,7 +204,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _fsharp = value;
                 });
-                _saveSettings();
+                saveSettings();
               },
             ),
             SwitchListTile(
@@ -206,7 +214,33 @@ class _SettingsPageState extends State<SettingsPage> {
                 setState(() {
                   _g = value;
                 });
-                _saveSettings();
+                saveSettings();
+              },
+            ),
+            const Divider(),
+            /*
+            HONESTLY
+            i have no idea how this code actually works
+            i just typed in some stuff and it worked first try
+            */
+            SwitchListTile(
+              title: const Text('Major'),
+              value: major,
+              onChanged: (bool value) {
+                setState(() {
+                  if (minor = true) major = value; // what the heck
+                });
+                saveSettings();
+              },
+            ),
+            SwitchListTile(
+              title: const Text('Minor'),
+              value: minor,
+              onChanged: (bool value) {
+                setState(() {
+                  if (major = true) minor = value;
+                });
+                saveSettings();
               },
             ),
           ],
