@@ -108,7 +108,7 @@ class SettingsPageState extends State<SettingsPage> {
               },
             ),
             SwitchListTile(
-              title: const Text('A♭'),
+              title: const Text('A♭/G♯'),
               value: _ab,
               onChanged: (bool value) {
                 setState(() {
@@ -148,7 +148,7 @@ class SettingsPageState extends State<SettingsPage> {
               },
             ),
             SwitchListTile(
-              title: const Text('C♯'),
+              title: const Text('C♯/D♭'),
               value: _csharp,
               onChanged: (bool value) {
                 setState(() {

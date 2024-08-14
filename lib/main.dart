@@ -125,10 +125,11 @@ class _MyAppState extends State<MyApp> {
     "Good luck!",
     "Nothing is impossible.",
     "No, this is Patrick!",
-    "Keep yourself safe",
+    "Keep Yourself Safe.",
     "Intonation...",
     "Practice 40hrs a day!",
-    "Geniuses are born, not created."
+    "Geniuses are born, not created.",
+    "Practicing scales is like eating your veggies."
   ];
   String scale = '';
   String quote = '';
@@ -150,12 +151,17 @@ class _MyAppState extends State<MyApp> {
       int randomNumber = random.nextInt(keys.length);
       int randomQuality = random.nextInt(qualities.length);
       newScale = "${keys[randomNumber]} ${qualities[randomQuality]}";
+      //convert enharmonics
+      if (newScale == "C♯ major") newScale = "D♭ major";
+      if (newScale == "A♭ minor") newScale = "G♯ minor";
     } while (newScale == previousScale);
+
     setState(() {
       previousScale = scale;
       scale = newScale;
     });
 
+    //QUOTES
     String newQuote;
     do {
       int randQuote = random.nextInt(quotes.length);
