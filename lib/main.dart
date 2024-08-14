@@ -53,24 +53,11 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> {
   //var keys = ["A", "A♭", "B", "B♭", "C", "C♯", "D", "E", "E♭", "F", "F♯", "G"];
-  final keys = [];
-  final qualities = [];
-
-  bool _a = true;
-  bool _ab = true;
-  bool _b = true;
-  bool _bb = true;
-  bool _c = true;
-  bool _csharp = true;
-  bool _d = true;
-  bool _e = true;
-  bool _eb = true;
-  bool _f = true;
-  bool _fsharp = true;
-  bool _g = true;
-
-  bool major = true;
-  bool minor = true;
+  bool _a = true, _ab = true, _b = true, _bb = true, _c = true, _csharp = true;
+  bool _d = true, _e = true, _eb = true, _f = true, _fsharp = true, _g = true;
+  bool major = true, minor = true;
+  List<String> keys = [];
+  List<String> qualities = [];
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -94,8 +81,7 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> updateKeys() async {
-    loadSettings();
-
+    await loadSettings();
     keys
       ..clear()
       ..addAll([
@@ -140,17 +126,18 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
+    initialize();
+  }
+
+  Future<void> initialize() async {
+    await updateKeys();
     generateScale();
   }
 
   void generateScale() {
-    updateKeys();
-    if (keys.isEmpty) {
-      return;
+    if (keys.isEmpty || qualities.isEmpty || (keys.length <= 1 && qualities.length <= 1)) {
+      return; //prevent generating literally nothing
     }
-    if (qualities.isEmpty) {
-      return;
-    } //prevent generating literally nothing
     String newScale;
     String randScale;
     do {
@@ -192,10 +179,17 @@ class _MyAppState extends State<MyApp> {
             IconButton(
               onPressed: () {
                 // naviate to second page
+                
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const SettingsPage()),
-                );
+                  MaterialPageRoute(
+                    builder: (context) => const SettingsPage()
+                    ),
+                ).then((_){
+                  setState(() {
+                    updateKeys();
+                  });
+                });
               },
               icon: const Icon(Icons.settings),
             ),
