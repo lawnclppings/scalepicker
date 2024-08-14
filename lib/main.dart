@@ -131,6 +131,9 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> initialize() async {
     await updateKeys();
+    if (keys.isEmpty || qualities.isEmpty || (keys.length <= 1 && qualities.length <= 1)) {
+      scale = "C major";
+    }
     generateScale();
   }
 
