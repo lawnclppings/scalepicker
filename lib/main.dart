@@ -145,7 +145,12 @@ class _MyAppState extends State<MyApp> {
 
   void generateScale() {
     updateKeys();
-    if (keys.isEmpty || qualities.isEmpty) return; //prevent generating literally nothing
+    if (keys.isEmpty) {
+      return;
+    }
+    if (qualities.isEmpty) {
+      return;
+    } //prevent generating literally nothing
     String newScale;
     String randScale;
     do {
