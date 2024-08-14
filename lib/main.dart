@@ -147,17 +147,22 @@ class _MyAppState extends State<MyApp> {
     updateKeys();
     if (keys.isEmpty || qualities.isEmpty) return; //prevent generating literally nothing
     String newScale;
+    String randScale;
     do {
       int randomNumber = random.nextInt(keys.length);
       int randomQuality = random.nextInt(qualities.length);
-      newScale = "${keys[randomNumber]} ${qualities[randomQuality]}";
+      randScale = "${keys[randomNumber]} ${qualities[randomQuality]}";
       //convert enharmonics
-      if (newScale == "C♯ major") newScale = "D♭ major";
-      if (newScale == "A♭ minor") newScale = "G♯ minor";
+      if (randScale == "C♯ major") {
+        newScale = "D♭ major";
+      } else if (randScale == "A♭ minor") {
+         newScale = "G♯ minor";
+      } else {
+        newScale = randScale;
+      }
     } while (newScale == previousScale);
-
+    previousScale = newScale;
     setState(() {
-      previousScale = scale;
       scale = newScale;
     });
 
@@ -167,8 +172,8 @@ class _MyAppState extends State<MyApp> {
       int randQuote = random.nextInt(quotes.length);
       newQuote = quotes[randQuote];
     } while (newQuote == previousQuote);
+      previousQuote = newQuote;
     setState(() {
-      previousQuote = quote;
       quote = newQuote;
     });
   }
