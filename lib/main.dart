@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const MaterialApp(
@@ -58,6 +59,9 @@ class _MyAppState extends State<MyApp> {
   bool major = true, minor = true;
   List<String> keys = [];
   List<String> qualities = [];
+
+  bool dronePlaying = false;
+  final player=AudioPlayer();
 
   Future<void> loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
@@ -137,16 +141,18 @@ class _MyAppState extends State<MyApp> {
     generateScale();
   }
 
-  void generateScale() {
+  Future<void> generateScale() async {
     if (keys.isEmpty || qualities.isEmpty || (keys.length <= 1 && qualities.length <= 1)) {
       return; //prevent generating literally nothing
     }
     String newScale;
     String randScale;
+    String randNote;
     do {
       int randomNumber = random.nextInt(keys.length);
       int randomQuality = random.nextInt(qualities.length);
-      randScale = "${keys[randomNumber]} ${qualities[randomQuality]}";
+      randNote = keys[randomNumber];
+      randScale = "$randNote ${qualities[randomQuality]}";
       //convert enharmonics
       if (randScale == "C♯ major") {
         newScale = "D♭ major";
@@ -160,7 +166,6 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       scale = newScale;
     });
-
     //QUOTES
     String newQuote;
     do {
@@ -171,6 +176,72 @@ class _MyAppState extends State<MyApp> {
     setState(() {
       quote = newQuote;
     });
+
+
+    //HANDLE AUDIO DRONES
+    if (dronePlaying) {
+      await play();
+    }
+  }
+
+  Future<void> play() async {
+    await player.stop();
+    var splitScale = scale.split(' ');
+    switch (splitScale[0]) {
+      case 'A':
+        await player.play(AssetSource('a.mp3'));
+        break;
+      case 'A♭':
+        await player.play(AssetSource('ab.mp3'));
+        break;
+      case 'G♯':
+        await player.play(AssetSource('ab.mp3'));
+        break;
+      case 'B':
+        await player.play(AssetSource('b.mp3'));
+        break;
+      case 'B♭':
+        await player.play(AssetSource('bb.mp3'));
+        break;
+      case 'C':
+        await player.play(AssetSource('c.mp3'));
+        break;
+      case 'C♯':
+        await player.play(AssetSource('csharp.mp3'));
+        break;
+      case 'D♭':
+        await player.play(AssetSource('csharp.mp3'));
+        break;
+      case 'D':
+        await player.play(AssetSource('d.mp3'));
+        break;
+      case 'E♭':
+        await player.play(AssetSource('eb.mp3'));
+        break;
+      case 'E':
+        await player.play(AssetSource('e.mp3'));
+        break;
+      case 'F':
+        await player.play(AssetSource('f.mp3'));
+        break;
+      case 'F♯':
+        await player.play(AssetSource('fsharp.mp3'));
+        break;
+      case 'G':
+        await player.play(AssetSource('g.mp3'));
+        break;
+    }
+  }
+
+  void toggleDrone(bool value) {
+    setState(() {
+      dronePlaying = value;
+    });
+    if (dronePlaying) {
+      play();
+    } else {
+      player.stop();
+    }
   }
 
   @override
@@ -179,10 +250,9 @@ class _MyAppState extends State<MyApp> {
       home: Scaffold(
         appBar: AppBar(
           actions: [
-            IconButton(
+            IconButton(  
               onPressed: () {
                 // naviate to second page
-                
                 Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -197,6 +267,21 @@ class _MyAppState extends State<MyApp> {
               icon: const Icon(Icons.settings),
             ),
           ],
+          title: Row(
+            children: <Widget>[
+              const Text(
+                'Drone  ',
+                style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                ), 
+              ),
+              Switch(
+                value: dronePlaying,
+                onChanged: toggleDrone,
+              ),
+            ],
+          ),
         ),
         body: GestureDetector(
           onTap: generateScale,
@@ -219,7 +304,8 @@ class _MyAppState extends State<MyApp> {
                 color: Colors.grey,
               ),
               quote,
-            )),
+            )
+            ),
       ),
     );
   }
