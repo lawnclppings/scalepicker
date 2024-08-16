@@ -119,7 +119,8 @@ class _MyAppState extends State<MyApp> {
     "Intonation...",
     "Practice 40hrs a day!",
     "Geniuses are born, not created.",
-    "Practicing scales is like eating your veggies."
+    "Practicing scales is like eating your veggies.",
+    "Life without music would B♭.",
   ];
   String scale = '';
   String quote = '';
@@ -147,12 +148,10 @@ class _MyAppState extends State<MyApp> {
     }
     String newScale;
     String randScale;
-    String randNote;
     do {
       int randomNumber = random.nextInt(keys.length);
       int randomQuality = random.nextInt(qualities.length);
-      randNote = keys[randomNumber];
-      randScale = "$randNote ${qualities[randomQuality]}";
+      randScale = "${keys[randomNumber]} ${qualities[randomQuality]}";
       //convert enharmonics
       if (randScale == "C♯ major") {
         newScale = "D♭ major";
@@ -231,6 +230,8 @@ class _MyAppState extends State<MyApp> {
         await player.play(AssetSource('g.mp3'));
         break;
     }
+    player.setReleaseMode(ReleaseMode.loop);
+    player.setVolume(0.75);
   }
 
   void toggleDrone(bool value) {
