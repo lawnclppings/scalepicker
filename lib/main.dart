@@ -184,54 +184,39 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> play() async {
+    final noteToFile = {
+      'A': 'a.mp3',
+      'A♭': 'ab.mp3',
+      'G♯': 'ab.mp3',
+      'B': 'b.mp3',
+      'B♭': 'bb.mp3',
+      'C': 'c.mp3',
+      'C♯': 'csharp.mp3',
+      'D♭': 'csharp.mp3',
+      'D': 'd.mp3',
+      'E♭': 'eb.mp3',
+      'E': 'e.mp3',
+      'F': 'f.mp3',
+      'F♯': 'fsharp.mp3',
+      'G': 'g.mp3',
+    };
     await player.stop();
+
     var splitScale = scale.split(' ');
-    switch (splitScale[0]) {
-      case 'A':
-        await player.play(AssetSource('a.mp3'));
-        break;
-      case 'A♭':
-        await player.play(AssetSource('ab.mp3'));
-        break;
-      case 'G♯':
-        await player.play(AssetSource('ab.mp3'));
-        break;
-      case 'B':
-        await player.play(AssetSource('b.mp3'));
-        break;
-      case 'B♭':
-        await player.play(AssetSource('bb.mp3'));
-        break;
-      case 'C':
-        await player.play(AssetSource('c.mp3'));
-        break;
-      case 'C♯':
-        await player.play(AssetSource('csharp.mp3'));
-        break;
-      case 'D♭':
-        await player.play(AssetSource('csharp.mp3'));
-        break;
-      case 'D':
-        await player.play(AssetSource('d.mp3'));
-        break;
-      case 'E♭':
-        await player.play(AssetSource('eb.mp3'));
-        break;
-      case 'E':
-        await player.play(AssetSource('e.mp3'));
-        break;
-      case 'F':
-        await player.play(AssetSource('f.mp3'));
-        break;
-      case 'F♯':
-        await player.play(AssetSource('fsharp.mp3'));
-        break;
-      case 'G':
-        await player.play(AssetSource('g.mp3'));
-        break;
+    if (splitScale.isEmpty) {
+      return; // no scale found, do nothing
     }
+
+    var audioFile = noteToFile[splitScale[0]];
+
+    if (audioFile == null) {
+      return; // if no audio file found, do nothing
+    }
+
+    await player.play(AssetSource(audioFile));
     player.setReleaseMode(ReleaseMode.loop);
-    player.setVolume(0.75);
+
+    player.setVolume(0.75); // cause the audio files are too loud
   }
 
   void toggleDrone(bool value) {
