@@ -299,6 +299,19 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+      bottomNavigationBar: BottomAppBar(
+            elevation: 0,
+            child: Container(
+            color: Colors.transparent,
+              child: Text(
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                color: Colors.grey,
+              ),
+              quote,
+            ),
+            ),
+      ),
     );
   }
 }
