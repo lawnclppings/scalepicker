@@ -1,0 +1,42 @@
+name: Flutter CI/CD
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to the main branch (you can customize this)
+  pull_request:
+    branches:
+      - main  # Trigger on PRs to the main branch (optional)
+
+jobs:
+  build:
+    runs-on: macos-latest  # macOS runner for iOS builds; use ubuntu-latest for Android builds
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: 'stable'  # You can specify a specific Flutter version here
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run Flutter tests (optional)
+        run: flutter test  # This is optional; run tests if you have them
+
+      - name: Build APK (for Android)
+        if: runner.os == 'Linux' || runner.os == 'Windows'  # Android builds can run on Linux/Windows
+        run: flutter build apk --release
+
+      - name: Build iOS (for iOS)
+        if: runner.os == 'macOS'  # iOS builds can only run on macOS
+        run: flutter build ios --release
+
+      - name: Upload build artifacts (optional)
+        uses: actions/upload-artifact@v3
+        with:
+          name: flutter-build
+          path: build/  # Upload the build folder (you can customize paths)

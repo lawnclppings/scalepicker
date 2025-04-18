@@ -84,7 +84,6 @@ class _HomePageState extends State<HomePage> {
     "Good luck!",
     "Nothing is impossible.",
     "No, this is Patrick!",
-    "Keep Yourself Safe.",
     "Intonation...",
     "Practice 40hrs a day!",
     "Geniuses are born, not created.",
@@ -92,6 +91,7 @@ class _HomePageState extends State<HomePage> {
     "Life without music would B♭.",
     "Don't give up!",
     "Slow practice. Or else...",
+    "Lock in!",
   ];
   String scale = '';
   String quote = '';
@@ -201,6 +201,34 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  Future<void> _showMyDialog() async {
+  return showDialog<void>(
+    context: context,
+    barrierDismissible: false, // user must tap button!
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: const Text('AlertDialog Title'),
+        content: const SingleChildScrollView(
+          child: ListBody(
+            children: <Widget>[
+              Text('This is a demo alert dialog.'),
+              Text('Would you like to approve of this message?'),
+            ],
+          ),
+        ),
+        actions: <Widget>[
+          TextButton(
+            child: const Text('Approve'),
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+          ),
+        ],
+      );
+    },
+  );
+}
+
   Future<void> play() async {
     final noteToFile = {
       'A': 'a.mp3',
@@ -261,6 +289,10 @@ class _HomePageState extends State<HomePage> {
           IconButton(
             icon: const Icon(Icons.brightness_6),
             onPressed: widget.toggleTheme,
+          ),
+          IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: _showMyDialog,
           ),
           IconButton(
             onPressed: () {
