@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    runs-on: macos-latest  # macOS runner for iOS builds; use ubuntu-latest for Android builds
+    runs-on: macos-latest
 
     steps:
       - name: Checkout repository
@@ -19,24 +19,16 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: 'stable'  # You can specify a specific Flutter version here
+          flutter-version: 'stable'
 
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Run Flutter tests (optional)
-        run: flutter test  # This is optional; run tests if you have them
-
-      - name: Build APK (for Android)
-        if: runner.os == 'Linux' || runner.os == 'Windows'  # Android builds can run on Linux/Windows
-        run: flutter build apk --release
-
-      - name: Build iOS (for iOS)
-        if: runner.os == 'macOS'  # iOS builds can only run on macOS
+      - name: Build iOS
         run: flutter build ios --release
 
-      - name: Upload build artifacts (optional)
+      - name: Upload iOS build artifact
         uses: actions/upload-artifact@v3
         with:
-          name: flutter-build
-          path: build/  # Upload the build folder (you can customize paths)
+          name: ios-build
+          path: build/ios/iphoneos/Runner.app
