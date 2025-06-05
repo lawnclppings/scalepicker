@@ -10,7 +10,7 @@ A practice tool for scales
 <br/>
 <br/>
   
-<a href="https://github.com/lawnclppings/scalepicker/issues/new?labels=bug&template=bug-report---.md">Report a bug</a> <h3 align="center"></h3>
+<a href="https://github.com/lawnclppings/scalepicker/issues/new?labels=bug&template=bug-report---.md">Report a bug</a>
 <a href="https://github.com/lawnclppings/scalepicker/issues/new?labels=enhancement&template=feature-request---.md">Request a feature</a>
 </p>
 </div>
@@ -19,7 +19,8 @@ A practice tool for scales
 
 <img src="https://github.com/lawnclppings/scalepicker/blob/main/assets/previews/main.png?raw=true" height="400"> <img src="https://github.com/lawnclppings/scalepicker/blob/main/assets/previews/settings.png?raw=true" height="400"> 
 
-I originally decided to create this tool in python a few years ago when practicing for an audition. Here it is in a nice little user friendly format, put this next to your metronome app for easy access!
+I originally decided to create this tool in python a few years ago to help me practice for an audition. Here it is in a nice little user friendly format, put this next to your metronome app for easy access!
+
 ### Built With
 
 - [Flutter](https://flutter.dev/)
