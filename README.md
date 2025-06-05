@@ -1,6 +1,6 @@
 <br/>
 <div align="center">
-<a href="https://github.com/ShaanCoding/ReadME-Generator">
+<a href="https://github.com/lawnclppings/scalepicker">
 <img src="https://github.com/lawnclppings/scalepicker/blob/main/assets/icon/icon.png?raw=true" alt="Logo" width="80" height="80">
 </a>
 <h3 align="center">Scalepicker</h3>
