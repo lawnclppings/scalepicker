@@ -1,251 +1,284 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+//import 'package:url_launcher/url_launcher.dart';
+import 'dart:async';
 
 class SettingsPage extends StatefulWidget {
-  const SettingsPage({super.key});
+  final VoidCallback toggleTheme;
+  const SettingsPage({super.key, required this.toggleTheme});
 
   @override
   SettingsPageState createState() => SettingsPageState();
 }
 
 class SettingsPageState extends State<SettingsPage> {
-  bool _a = true;
-  bool _ab = true;
-  bool _b = true;
-  bool _bb = true;
-  bool _c = true;
-  bool _csharp = true;
-  bool _d = true;
-  bool _e = true;
-  bool _eb = true;
-  bool _f = true;
-  bool _fsharp = true;
-  bool _g = true;
+  final Map<String, bool> _noteToggles = {
+    'a': true,
+    'ab': true,
+    'b': true,
+    'bb': true,
+    'c': true,
+    'csharp': true,
+    'd': true,
+    'e': true,
+    'eb': true,
+    'f': true,
+    'fsharp': true,
+    'g': true,
+  };
 
   bool major = true;
   bool minor = true;
-
   bool _isLoading = true;
-
+  bool _snackBarVisible = false;
+  Timer? _debounceTimer;
   @override
   void initState() {
     super.initState();
-    loadSettings();
+    WidgetsBinding.instance.addPostFrameCallback((_) => loadSettings());
   }
 
-  Future<void> loadSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _a = prefs.getBool('a') ?? true;
-      _ab = prefs.getBool('ab') ?? true;
-      _b = prefs.getBool('b') ?? true;
-      _bb = prefs.getBool('bb') ?? true;
-      _c = prefs.getBool('c') ?? true;
-      _csharp = prefs.getBool('csharp') ?? true;
-      _d = prefs.getBool('d') ?? true;
-      _e = prefs.getBool('e') ?? true;
-      _eb = prefs.getBool('eb') ?? true;
-      _f = prefs.getBool('f') ?? true;
-      _fsharp = prefs.getBool('fsharp') ?? true;
-      _g = prefs.getBool('g') ?? true;
+  @override
+  void dispose() {
+    _debounceTimer?.cancel();
+    super.dispose();
+  }
 
-      major = prefs.getBool('major') ?? true;
-      minor = prefs.getBool('minor') ?? true;
+  void _updateMajorMinor() {
+    final selectedCount = _noteToggles.values.where((v) => v).length;
+    if (selectedCount == 1) {
+      major = true;
+      minor = true;
+    }
+  }
 
-      _isLoading = false;
+  void debouncedSaveSettings() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
+      saveSettings(); // call the actual save method after 300ms
     });
   }
 
-  Future<void> saveSettings() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('a', _a);
-    await prefs.setBool('ab', _ab);
-    await prefs.setBool('b', _b);
-    await prefs.setBool('bb', _bb);
-    await prefs.setBool('c', _c);
-    await prefs.setBool('csharp', _csharp);
-    await prefs.setBool('d', _d);
-    await prefs.setBool('e', _e);
-    await prefs.setBool('eb', _eb);
-    await prefs.setBool('f', _f);
-    await prefs.setBool('fsharp', _fsharp);
-    await prefs.setBool('g', _g);
+  Future<void> loadSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
 
-    await prefs.setBool('major', major);
-    await prefs.setBool('minor', minor);
+      final newToggles = Map<String, bool>.from(_noteToggles);
+      newToggles.updateAll((key, value) => prefs.getBool(key) ?? true);
+      final newMajor = prefs.getBool('major') ?? true;
+      final newMinor = prefs.getBool('minor') ?? true;
+
+      if (mounted) {
+        setState(() {
+          _noteToggles.clear();
+          _noteToggles.addAll(newToggles);
+          major = newMajor;
+          minor = newMinor;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading settings: $e');
+    }
+  }
+
+  Future<void> saveSettings() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final toggles = Map<String, bool>.from(_noteToggles);
+
+      for (final entry in toggles.entries) {
+        try {
+          bool valueToSave = entry.value;
+          await prefs.setBool(entry.key, valueToSave);
+        } catch (e) {
+          debugPrint('Error saving ${entry.key}: $e');
+        }
+      }
+      await prefs.setBool('major', major);
+      await prefs.setBool('minor', minor);
+    } catch (e) {
+      debugPrint('Error saving settings: $e');
+    }
+  }
+
+  void _showWarning(BuildContext context, String message) {
+    if (_snackBarVisible) return;
+
+    _snackBarVisible = true;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        ),
+      ).closed.then((_) {
+        if (mounted) {
+          setState(() {
+            _snackBarVisible = false;
+          });
+        }
+      });
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return Scaffold(
-        appBar: AppBar(
-          title: const Text('Configuration'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    return FutureBuilder(
+      future: SharedPreferences.getInstance(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+        if (_isLoading) {
+          final prefs = snapshot.data!;
+          _noteToggles.updateAll((k, _) => prefs.getBool(k) ?? true);
+          major = prefs.getBool('major') ?? true;
+          minor = prefs.getBool('minor') ?? true;
+          _isLoading = false;
+        }
 
+        return buildSettingsContent(context);
+      },
+    );
+  }
+
+  Widget buildSettingsContent(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuration'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.brightness_6),
+            onPressed: widget.toggleTheme,
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SwitchListTile(
-              title: const Text('A'),
-              value: _a,
-              onChanged: (bool value) {
-                setState(() {
-                  _a = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('A♭/G♯'),
-              value: _ab,
-              onChanged: (bool value) {
-                setState(() {
-                  _ab = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('B'),
-              value: _b,
-              onChanged: (bool value) {
-                setState(() {
-                  _b = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('B♭'),
-              value: _bb,
-              onChanged: (bool value) {
-                setState(() {
-                  _bb = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('C'),
-              value: _c,
-              onChanged: (bool value) {
-                setState(() {
-                  _c = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('C♯/D♭'),
-              value: _csharp,
-              onChanged: (bool value) {
-                setState(() {
-                  _csharp = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('D'),
-              value: _d,
-              onChanged: (bool value) {
-                setState(() {
-                  _d = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('E'),
-              value: _e,
-              onChanged: (bool value) {
-                setState(() {
-                  _e = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('E♭'),
-              value: _eb,
-              onChanged: (bool value) {
-                setState(() {
-                  _eb = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('F'),
-              value: _f,
-              onChanged: (bool value) {
-                setState(() {
-                  _f = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('F♯'),
-              value: _fsharp,
-              onChanged: (bool value) {
-                setState(() {
-                  _fsharp = value;
-                });
-                saveSettings();
-              },
-            ),
-            SwitchListTile(
-              title: const Text('G'),
-              value: _g,
-              onChanged: (bool value) {
-                setState(() {
-                  _g = value;
-                });
-                saveSettings();
-              },
-            ),
+            ..._noteToggles.entries.map((entry) {
+              return GestureDetector(
+                onLongPress: () {
+                  final selectedCount =
+                      _noteToggles.values.where((v) => v).length;
+
+                  setState(() {
+                    // long press to select all scales if only one is marked
+                    if (selectedCount == 1 && _noteToggles[entry.key] == true) {
+                      _noteToggles
+                          .updateAll((_, __) => true); // select every scale
+                    } else {
+                      // toggle
+                      _noteToggles.updateAll((k, _) => k == entry.key);
+                    }
+
+                    _updateMajorMinor();
+                  });
+                  debouncedSaveSettings();
+                },
+                child: SwitchListTile(
+                  title: Text(_formatNoteLabel(entry.key)),
+                  value: entry.value,
+                  onChanged: (bool value) {
+                    int trueCount = _noteToggles.values.where((v) => v).length;
+
+                    if (!value && trueCount <= 1) {
+                      _showWarning(
+                          context, 'At least one key must be selected.');
+                      return;
+                    }
+
+                    setState(() {
+                      _noteToggles[entry.key] = value;
+                      _updateMajorMinor();
+                    });
+
+                    debouncedSaveSettings();
+                  },
+                ),
+              );
+            }),
             const Divider(),
-            /*
-            HONESTLY
-            i have no idea how this code actually works
-            i just typed in some stuff and it worked first try
-            */
             SwitchListTile(
               title: const Text('Major'),
               value: major,
               onChanged: (bool value) {
+                final selectedCount =
+                    _noteToggles.values.where((v) => v).length;
+
                 setState(() {
-                  if (minor = true) major = value; // what the heck
+                  if (selectedCount == 1) {
+                    _showWarning(context,
+                        'You must have more than one scale to generate.');
+                    major = true;
+                    minor = true;
+                  } else {
+                    if (!value && !minor) {
+                      major = false;
+                      minor = true;
+                    } else {
+                      major = value;
+                    }
+                  }
                 });
-                saveSettings();
+                debouncedSaveSettings();
               },
             ),
             SwitchListTile(
               title: const Text('Minor'),
               value: minor,
               onChanged: (bool value) {
+                final selectedCount =
+                    _noteToggles.values.where((v) => v).length;
+
                 setState(() {
-                  if (major = true) minor = value;
+                  if (selectedCount == 1) {
+                    _showWarning(context,
+                        'You must have more than one scale to generate.');
+                    major = true;
+                    minor = true;
+                  } else {
+                    if (!value && !major) {
+                      minor = false;
+                      major = true;
+                    } else {
+                      minor = value;
+                    }
+                  }
                 });
-                saveSettings();
+                debouncedSaveSettings();
               },
             ),
           ],
         ),
       ),
     );
+  }
+
+  String _formatNoteLabel(String key) {
+    switch (key) {
+      case 'ab':
+        return 'A♭ / G♯';
+      case 'bb':
+        return 'B♭';
+      case 'csharp':
+        return 'C♯ / D♭';
+      case 'eb':
+        return 'E♭';
+      case 'fsharp':
+        return 'F♯';
+      default:
+        return key.toUpperCase();
+    }
   }
 }

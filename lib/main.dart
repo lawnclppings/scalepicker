@@ -1,8 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'settings_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:audioplayers/audioplayers.dart';
+// local import
+import 'settings_page.dart';
+import 'audio_manager.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,39 +19,142 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   bool darkMode = false;
   bool isInitialized = false;
+  late SharedPreferences prefs;
+  late bool _a, _ab, _b, _bb, _c, _csharp, _d, _e, _eb, _f, _fsharp, _g;
+  late bool major, minor;
+  String scale = "C major"; // default scale
 
   @override
   void initState() {
     super.initState();
-    _initializeApp();
   }
 
-  Future<void> _initializeApp() async {
-    // Load theme preference
-    final prefs = await SharedPreferences.getInstance();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!isInitialized) {
+      final systemDarkMode =
+          MediaQuery.of(context).platformBrightness == Brightness.dark;
+      _initializeApp(systemDarkMode);
+    }
+  }
+
+  Future<void> _initializeApp(bool systemDarkMode) async {
+    final instance = await SharedPreferences.getInstance();
     setState(() {
-      darkMode = prefs.getBool('darkMode') ?? false;
+      prefs = instance;
+      darkMode = prefs.getBool('darkMode') ?? systemDarkMode;
+      _a = prefs.getBool('a') ?? true;
+      _ab = prefs.getBool('ab') ?? true;
+      _b = prefs.getBool('b') ?? true;
+      _bb = prefs.getBool('bb') ?? true;
+      _c = prefs.getBool('c') ?? true;
+      _csharp = prefs.getBool('csharp') ?? true;
+      _d = prefs.getBool('d') ?? true;
+      _eb = prefs.getBool('eb') ?? true;
+      _e = prefs.getBool('e') ?? true;
+      _f = prefs.getBool('f') ?? true;
+      _fsharp = prefs.getBool('fsharp') ?? true;
+      _g = prefs.getBool('g') ?? true;
+      major = prefs.getBool('major') ?? true;
+      minor = prefs.getBool('minor') ?? true;
       isInitialized = true;
+    });
+    updateKeys();
+  }
+
+  Future<void> updateKeys() async {
+    List<String> keys = [
+      if (_a) 'A',
+      if (_ab) 'A♭',
+      if (_b) 'B',
+      if (_bb) 'B♭',
+      if (_c) 'C',
+      if (_csharp) 'C♯',
+      if (_d) 'D',
+      if (_e) 'E',
+      if (_eb) 'E♭',
+      if (_f) 'F',
+      if (_fsharp) 'F♯',
+      if (_g) 'G',
+    ];
+
+    if (keys.isEmpty) {
+      keys.add('C');
+    }
+
+    List<String> qualities = [if (major) 'major', if (minor) 'minor'];
+
+    if (keys.isEmpty || qualities.isEmpty) {
+      setState(() {
+        scale = "C major";
+      });
+    }
+    setState(() {
+      if (keys.isNotEmpty && qualities.isNotEmpty) {
+        scale = "${keys.first} ${qualities.first}";
+      } else {
+        scale = "C major";
+      }
     });
   }
 
   Future<void> _saveThemePreference(bool isDarkMode) async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setBool('darkMode', isDarkMode);
+    await prefs.setBool('darkMode', isDarkMode);
   }
 
   void _toggleTheme() async {
+    bool newDarkMode = !darkMode;
+    _saveThemePreference(newDarkMode);
     setState(() {
-      darkMode = !darkMode;
+      darkMode = newDarkMode;
     });
-    await _saveThemePreference(darkMode); // Save the new theme preference
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Scale Picker',
-      theme: darkMode ? ThemeData.dark(): ThemeData.light(),
+      theme: darkMode
+          ? ThemeData.dark().copyWith(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Color(0xFF6AB7F5),
+                brightness: Brightness.dark,
+              ),
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.transparent,
+                foregroundColor: Colors.white,
+                elevation: 0, // Remove shadow for transparency
+              ),
+              textTheme: TextTheme(
+                bodyLarge: TextStyle(color: Colors.white),
+                bodyMedium: TextStyle(color: Colors.white),
+                bodySmall: TextStyle(color: Colors.white),
+                titleLarge: TextStyle(color: Colors.white),
+              ),
+            )
+          : ThemeData.light().copyWith(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Color(0xFF6AB7F5),
+                brightness: Brightness.light,
+              ),
+              appBarTheme: AppBarTheme(
+                backgroundColor: Colors.transparent,
+                elevation: 0,
+                iconTheme: IconThemeData(
+                  color: darkMode ? Colors.white : Colors.grey[700],
+                ),
+                actionsIconTheme: IconThemeData(
+                  color: darkMode ? Colors.white : Colors.grey[700],
+                ),
+              ),
+              textTheme: TextTheme(
+                bodyLarge: TextStyle(color: Colors.black),
+                bodyMedium: TextStyle(color: Colors.black),
+                bodySmall: TextStyle(color: Colors.black),
+                titleLarge: TextStyle(color: Colors.black),
+              ),
+            ),
       home: isInitialized
           ? HomePage(toggleTheme: _toggleTheme)
           : const Scaffold(
@@ -75,8 +179,6 @@ class _HomePageState extends State<HomePage> {
   bool major = true, minor = true;
   List<String> keys = [];
   List<String> qualities = [];
-  bool dronePlaying = false;
-  final player = AudioPlayer();
   final List<String> quotes = [
     "You can do this!",
     "Live, laugh, love.",
@@ -85,7 +187,7 @@ class _HomePageState extends State<HomePage> {
     "Nothing is impossible.",
     "No, this is Patrick!",
     "Intonation...",
-    "Practice 40hrs a day!",
+    "Practice 40 hours a day!",
     "Geniuses are born, not created.",
     "Practicing scales is like eating your veggies.",
     "Life without music would B♭.",
@@ -97,6 +199,7 @@ class _HomePageState extends State<HomePage> {
   String quote = '';
   String previousQuote = '';
   String previousScale = '';
+  bool dronePlaying = false;
   final Random random = Random();
 
   @override
@@ -105,14 +208,22 @@ class _HomePageState extends State<HomePage> {
     initialize();
   }
 
+  @override
+  void dispose() {
+    AudioPlayerManager().stopAudio();
+    super.dispose();
+  }
+
   Future<void> initialize() async {
+    await loadSettings();
     await updateKeys();
-    if (keys.isEmpty ||
-        qualities.isEmpty ||
-        (keys.length <= 1 && qualities.length <= 1)) {
-      scale = "C major";
+
+    if (keys.isEmpty || qualities.isEmpty) {
+      setState(() {
+        scale = "C major"; // default scale
+      });
     }
-    generateScale();
+    await generateScale();
   }
 
   Future<void> loadSettings() async {
@@ -125,8 +236,8 @@ class _HomePageState extends State<HomePage> {
       _c = prefs.getBool('c') ?? true;
       _csharp = prefs.getBool('csharp') ?? true;
       _d = prefs.getBool('d') ?? true;
-      _e = prefs.getBool('e') ?? true;
       _eb = prefs.getBool('eb') ?? true;
+      _e = prefs.getBool('e') ?? true;
       _f = prefs.getBool('f') ?? true;
       _fsharp = prefs.getBool('fsharp') ?? true;
       _g = prefs.getBool('g') ?? true;
@@ -151,117 +262,67 @@ class _HomePageState extends State<HomePage> {
         if (_eb) 'E♭',
         if (_f) 'F',
         if (_fsharp) 'F♯',
-        if (_g) 'G'
+        if (_g) 'G',
       ]);
-
+    if (keys.isEmpty) {
+      keys.add('C');
+    }
     qualities
       ..clear()
       ..addAll([if (major) 'major', if (minor) 'minor']);
   }
 
   Future<void> generateScale() async {
-    if (keys.isEmpty ||
-        qualities.isEmpty ||
-        (keys.length <= 1 && qualities.length <= 1)) {
-      return; // Prevent generating literally nothing
+    if (keys.isEmpty || qualities.isEmpty) {
+      scale = "C major"; // default scale
+      return;
     }
-    String newScale;
-    String randScale;
-    do {
-      int randomNumber = random.nextInt(keys.length);
-      int randomQuality = random.nextInt(qualities.length);
-      randScale = "${keys[randomNumber]} ${qualities[randomQuality]}";
-      // Convert enharmonics
-      if (randScale == "C♯ major") {
-        newScale = "D♭ major";
-      } else if (randScale == "A♭ minor") {
-        newScale = "G♯ minor";
-      } else {
-        newScale = randScale;
-      }
-    } while (newScale == previousScale);
+
+    List<String> allScales = [
+      for (var key in keys)
+        for (var quality in qualities) _convertEnharmonics("$key $quality")
+    ];
+
+    String newScale = allScales[(Random().nextInt(allScales.length))];
+
+    while (newScale == previousScale && allScales.length > 1) {
+      newScale = allScales[(Random().nextInt(allScales.length))];
+    }
+
     previousScale = newScale;
     setState(() {
       scale = newScale;
     });
-    // QUOTES
-    String newQuote;
-    do {
-      int randQuote = random.nextInt(quotes.length);
-      newQuote = quotes[randQuote];
-    } while (newQuote == previousQuote);
+
+    List<String> availableQuotes = List.from(quotes);
+
+    String newQuote =
+        availableQuotes[(Random().nextInt(availableQuotes.length))];
+
+    while (newQuote == previousQuote && availableQuotes.length > 1) {
+      newQuote = availableQuotes[(Random().nextInt(availableQuotes.length))];
+    }
+
     previousQuote = newQuote;
+
     setState(() {
       quote = newQuote;
     });
 
-    // HANDLE AUDIO DRONES
     if (dronePlaying) {
-      await play();
+      await AudioPlayerManager().playAudio(scale.split(' ')[0]);
     }
   }
 
-  Future<void> _showMyDialog() async {
-  return showDialog<void>(
-    context: context,
-    barrierDismissible: false, // user must tap button!
-    builder: (BuildContext context) {
-      return AlertDialog(
-        title: const Text('AlertDialog Title'),
-        content: const SingleChildScrollView(
-          child: ListBody(
-            children: <Widget>[
-              Text('This is a demo alert dialog.'),
-              Text('Would you like to approve of this message?'),
-            ],
-          ),
-        ),
-        actions: <Widget>[
-          TextButton(
-            child: const Text('Approve'),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-        ],
-      );
-    },
-  );
-}
-
-  Future<void> play() async {
-    final noteToFile = {
-      'A': 'a.mp3',
-      'A♭': 'ab.mp3',
-      'G♯': 'ab.mp3',
-      'B': 'b.mp3',
-      'B♭': 'bb.mp3',
-      'C': 'c.mp3',
-      'C♯': 'csharp.mp3',
-      'D♭': 'csharp.mp3',
-      'D': 'd.mp3',
-      'E♭': 'eb.mp3',
-      'E': 'e.mp3',
-      'F': 'f.mp3',
-      'F♯': 'fsharp.mp3',
-      'G': 'g.mp3',
-    };
-    await player.stop();
-
-    var splitScale = scale.split(' ');
-    if (splitScale.isEmpty) {
-      return; // No scale found, do nothing
+  String _convertEnharmonics(String scale) {
+    switch (scale) {
+      case "C♯ major":
+        return "D♭ major";
+      case "A♭ minor":
+        return "G♯ minor";
+      default:
+        return scale;
     }
-
-    var audioFile = noteToFile[splitScale[0]];
-
-    if (audioFile == null) {
-      return; // If no audio file found, do nothing
-    }
-
-    await player.play(AssetSource(audioFile));
-    player.setReleaseMode(ReleaseMode.loop);
-    player.setVolume(0.75); // Cause the audio files are too loud
   }
 
   void toggleDrone() {
@@ -269,9 +330,9 @@ class _HomePageState extends State<HomePage> {
       dronePlaying = !dronePlaying;
     });
     if (dronePlaying) {
-      play();
+      AudioPlayerManager().playAudio(scale.split(' ')[0]);
     } else {
-      player.stop();
+      AudioPlayerManager().stopAudio();
     }
   }
 
@@ -287,23 +348,19 @@ class _HomePageState extends State<HomePage> {
             onPressed: toggleDrone,
           ),
           IconButton(
-            icon: const Icon(Icons.brightness_6),
-            onPressed: widget.toggleTheme,
-          ),
-          IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: _showMyDialog,
-          ),
-          IconButton(
             onPressed: () {
+              if (dronePlaying) {
+                toggleDrone();
+              }
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => const SettingsPage(),
+                  builder: (context) =>
+                      SettingsPage(toggleTheme: widget.toggleTheme),
                 ),
               ).then((_) {
                 setState(() {
-                  updateKeys();
+                  updateKeys(); // Re-load the keys after settings change
                 });
               });
             },
@@ -311,7 +368,7 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      body: Stack( // to make sure the gesturedetector covers the entire screen
+      body: Stack(
         children: [
           Center(
             child: Text(
@@ -325,24 +382,24 @@ class _HomePageState extends State<HomePage> {
           GestureDetector(
             onTap: generateScale,
             child: Container(
-              color: Colors
-                  .transparent, // Make sure it's transparent to not block content
+              color: Colors.transparent,
             ),
           ),
         ],
       ),
       bottomNavigationBar: BottomAppBar(
-            elevation: 0,
-            child: Container(
-            color: Colors.transparent,
-              child: Text(
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                color: Colors.grey,
-              ),
-              quote,
+        elevation: 0,
+        color: Colors.transparent,
+        child: Container(
+          color: Colors.transparent,
+          child: Text(
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Colors.grey,
             ),
-            ),
+            quote,
+          ),
+        ),
       ),
     );
   }
