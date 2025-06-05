@@ -17,7 +17,7 @@ A practice tool for scales
 
 ## About The Project
 
-<img src="https://github.com/lawnclppings/scalepicker/blob/main/assets/preview.png" width="300"> 
+<img src="https://github.com/lawnclppings/scalepicker/blob/main/assets/previews/main.png?raw=true" height="400"> <img src="https://github.com/lawnclppings/scalepicker/blob/main/assets/previews/settings.png?raw=true" height="400"> 
 
 I originally decided to create this tool in python a few years ago when practicing for an audition. Here it is in a nice little user friendly format, put this next to your metronome app for easy access!
 ### Built With
