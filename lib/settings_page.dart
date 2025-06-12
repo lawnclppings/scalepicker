@@ -80,6 +80,14 @@ class SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> savePreset(String name) async {
+    if (presets.length >= 10) {
+      // make sure the user cant set too many presets, sorry if you wanted 100 presets it is not happening.
+      if (mounted) {
+        _showWarning(context, 'Maximum of 10 presets allowed.');
+      }
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final presetKey = 'preset_$name';
     final presetData = {
@@ -161,6 +169,11 @@ class SettingsPageState extends State<SettingsPage> {
       builder: (context) {
         return StatefulBuilder(builder: (context, setDialogState) {
           return AlertDialog(
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            titlePadding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            contentPadding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+            actionsPadding: const EdgeInsets.only(right: 12, bottom: 8),
             title: Text(
               'Presets',
               style: TextStyle(
@@ -176,8 +189,10 @@ class SettingsPageState extends State<SettingsPage> {
                 if (presets.isNotEmpty)
                   ...presets.map((presetName) {
                     return ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                          vertical: 2, horizontal: 0),
+                      dense: true,
+                      visualDensity: const VisualDensity(
+                          vertical: -2), // tight vertical spacing
+                      contentPadding: EdgeInsets.zero,
                       title: Text(presetName),
                       trailing: IconButton(
                         icon: Icon(
@@ -209,12 +224,12 @@ class SettingsPageState extends State<SettingsPage> {
                         controller: presetController,
                         decoration: const InputDecoration(
                           labelText: 'Preset Name',
-                          contentPadding: EdgeInsets.symmetric(vertical: 12),
                         ),
                         onSubmitted: (name) async {
                           final trimmedName = name.trim();
                           if (trimmedName.isNotEmpty &&
-                              !presets.contains(trimmedName)) {
+                              !presets.contains(trimmedName) &&
+                              presets.length < 10) {
                             await savePreset(trimmedName);
                             presetController.clear();
                             setDialogState(() {});
@@ -226,14 +241,17 @@ class SettingsPageState extends State<SettingsPage> {
                       padding: const EdgeInsets.only(left: 8.0),
                       child: IconButton(
                         icon: const Icon(Icons.save),
-                        onPressed: () async {
-                          final name = presetController.text.trim();
-                          if (name.isNotEmpty && !presets.contains(name)) {
-                            await savePreset(name);
-                            presetController.clear();
-                            setDialogState(() {});
-                          }
-                        },
+                        onPressed: presets.length >= 10
+                            ? null
+                            : () async {
+                                final name = presetController.text.trim();
+                                if (name.isNotEmpty &&
+                                    !presets.contains(name)) {
+                                  await savePreset(name);
+                                  presetController.clear();
+                                  setDialogState(() {});
+                                }
+                              },
                       ),
                     ),
                   ],
@@ -312,8 +330,24 @@ class SettingsPageState extends State<SettingsPage> {
               title: const Text('Major'),
               value: major,
               onChanged: (bool value) {
+                final selectedCount = noteToggles.values.where((v) => v).length;
                 setState(() {
-                  major = value;
+                  setState(() {
+                    if (selectedCount == 1) {
+                      major = value;
+                      _showWarning(context,
+                          'You must have more than one scale to generate.');
+                      major = true;
+                      minor = true;
+                    } else {
+                      if (!value && !minor) {
+                        major = false;
+                        minor = true;
+                      } else {
+                        major = value;
+                      }
+                    }
+                  });
                 });
                 debouncedSaveSettings();
               },
@@ -322,8 +356,22 @@ class SettingsPageState extends State<SettingsPage> {
               title: const Text('Minor'),
               value: minor,
               onChanged: (bool value) {
+                final selectedCount = noteToggles.values.where((v) => v).length;
                 setState(() {
-                  minor = value;
+                  if (selectedCount == 1) {
+                    minor = value;
+                    _showWarning(context,
+                        'You must have more than one scale to generate.');
+                    major = true;
+                    minor = true;
+                  } else {
+                    if (!value && !major) {
+                      minor = false;
+                      major = true;
+                    } else {
+                      minor = value;
+                    }
+                  }
                 });
                 debouncedSaveSettings();
               },
