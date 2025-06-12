@@ -36,13 +36,21 @@ class SettingsPageState extends State<SettingsPage> {
   bool major = true;
   bool minor = true;
   bool _snackBarVisible = false;
+  bool _isLoading = true;
   Timer? _debounceTimer;
   List<String> presets = [];
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => loadSettings());
+    initializeSettings();
+  }
+
+  Future<void> initializeSettings() async {
+    await loadSettings();
+    setState(() {
+      _isLoading = false;
+    });
   }
 
   @override
@@ -288,97 +296,102 @@ class SettingsPageState extends State<SettingsPage> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            ...noteToggles.entries.map((entry) {
-              return GestureDetector(
-                onLongPress: () {
-                  setState(() {
-                    final selectedCount =
-                        noteToggles.values.where((v) => v).length;
-                    if (selectedCount == 1 && entry.value) {
-                      noteToggles.updateAll((_, __) => true);
-                    } else {
-                      noteToggles.updateAll((k, _) => k == entry.key);
-                    }
-                    debouncedSaveSettings();
-                  });
-                },
-                child: SwitchListTile(
-                  title: Text(_formatNoteLabel(entry.key)),
-                  value: entry.value,
-                  onChanged: (bool value) {
-                    final trueCount = noteToggles.values.where((v) => v).length;
-                    if (!value && trueCount <= 1) {
-                      _showWarning(
-                          context, 'At least one key must be selected.');
-                      return;
-                    }
-                    setState(() {
-                      noteToggles[entry.key] = value;
-                    });
-                    debouncedSaveSettings();
-                  },
-                ),
-              );
-            }),
-            const Divider(),
-            SwitchListTile(
-              title: const Text('Major'),
-              value: major,
-              onChanged: (bool value) {
-                final selectedCount = noteToggles.values.where((v) => v).length;
-                setState(() {
-                  setState(() {
-                    if (selectedCount == 1) {
-                      major = value;
-                      _showWarning(context,
-                          'You must have more than one scale to generate.');
-                      major = true;
-                      minor = true;
-                    } else {
-                      if (!value && !minor) {
-                        major = false;
-                        minor = true;
-                      } else {
-                        major = value;
-                      }
-                    }
-                  });
-                });
-                debouncedSaveSettings();
-              },
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ...noteToggles.entries.map((entry) {
+                    return GestureDetector(
+                      onLongPress: () {
+                        setState(() {
+                          final selectedCount =
+                              noteToggles.values.where((v) => v).length;
+                          if (selectedCount == 1 && entry.value) {
+                            noteToggles.updateAll((_, __) => true);
+                          } else {
+                            noteToggles.updateAll((k, _) => k == entry.key);
+                          }
+                          debouncedSaveSettings();
+                        });
+                      },
+                      child: SwitchListTile(
+                        title: Text(_formatNoteLabel(entry.key)),
+                        value: entry.value,
+                        onChanged: (bool value) {
+                          final trueCount =
+                              noteToggles.values.where((v) => v).length;
+                          if (!value && trueCount <= 1) {
+                            _showWarning(
+                                context, 'At least one key must be selected.');
+                            return;
+                          }
+                          setState(() {
+                            noteToggles[entry.key] = value;
+                          });
+                          debouncedSaveSettings();
+                        },
+                      ),
+                    );
+                  }),
+                  const Divider(),
+                  SwitchListTile(
+                    title: const Text('Major'),
+                    value: major,
+                    onChanged: (bool value) {
+                      final selectedCount =
+                          noteToggles.values.where((v) => v).length;
+                      setState(() {
+                        setState(() {
+                          if (selectedCount == 1) {
+                            major = value;
+                            _showWarning(context,
+                                'You must have more than one scale to generate.');
+                            major = true;
+                            minor = true;
+                          } else {
+                            if (!value && !minor) {
+                              major = false;
+                              minor = true;
+                            } else {
+                              major = value;
+                            }
+                          }
+                        });
+                      });
+                      debouncedSaveSettings();
+                    },
+                  ),
+                  SwitchListTile(
+                    title: const Text('Minor'),
+                    value: minor,
+                    onChanged: (bool value) {
+                      final selectedCount =
+                          noteToggles.values.where((v) => v).length;
+                      setState(() {
+                        if (selectedCount == 1) {
+                          minor = value;
+                          _showWarning(context,
+                              'You must have more than one scale to generate.');
+                          major = true;
+                          minor = true;
+                        } else {
+                          if (!value && !major) {
+                            minor = false;
+                            major = true;
+                          } else {
+                            minor = value;
+                          }
+                        }
+                      });
+                      debouncedSaveSettings();
+                    },
+                  ),
+                ],
+              ),
             ),
-            SwitchListTile(
-              title: const Text('Minor'),
-              value: minor,
-              onChanged: (bool value) {
-                final selectedCount = noteToggles.values.where((v) => v).length;
-                setState(() {
-                  if (selectedCount == 1) {
-                    minor = value;
-                    _showWarning(context,
-                        'You must have more than one scale to generate.');
-                    major = true;
-                    minor = true;
-                  } else {
-                    if (!value && !major) {
-                      minor = false;
-                      major = true;
-                    } else {
-                      minor = value;
-                    }
-                  }
-                });
-                debouncedSaveSettings();
-              },
-            ),
-          ],
-        ),
-      ),
     );
   }
 

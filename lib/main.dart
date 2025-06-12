@@ -386,7 +386,13 @@ class _HomePageState extends State<HomePage> {
           Center(
             child: Text(
               scale,
-              style: const TextStyle(fontSize: 64, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 64,
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors.black,
+              ),
             ),
           ),
           GestureDetector(
