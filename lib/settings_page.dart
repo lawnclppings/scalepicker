@@ -126,13 +126,14 @@ class SettingsPageState extends State<SettingsPage> {
     debouncedSaveSettings();
   }
 
-  void deletePreset(String name) async {
+  void deletePreset(String name, VoidCallback updateDialog) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('preset_$name');
     setState(() {
       presets.remove(name);
     });
     await prefs.setStringList('presets', presets);
+    updateDialog(); // ensure dialog updates too
   }
 
   void debouncedSaveSettings() {
@@ -204,8 +205,7 @@ class SettingsPageState extends State<SettingsPage> {
                               : Colors.red[800],
                         ),
                         onPressed: () async {
-                          deletePreset(presetName);
-                          setDialogState(() {});
+                          deletePreset(presetName, () => setDialogState(() {}));
                         },
                       ),
                       onTap: () {
