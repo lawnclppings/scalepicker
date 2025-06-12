@@ -1,37 +1,44 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-//import 'package:url_launcher/url_launcher.dart';
-import 'dart:async';
 
 class SettingsPage extends StatefulWidget {
   final VoidCallback toggleTheme;
-  const SettingsPage({super.key, required this.toggleTheme});
+
+  const SettingsPage(
+      {super.key, required this.toggleTheme}); // handle theme on settings page
 
   @override
   SettingsPageState createState() => SettingsPageState();
 }
 
 class SettingsPageState extends State<SettingsPage> {
-  final Map<String, bool> _noteToggles = {
-    'a': true,
-    'ab': true,
-    'b': true,
-    'bb': true,
-    'c': true,
-    'csharp': true,
-    'd': true,
-    'e': true,
-    'eb': true,
-    'f': true,
-    'fsharp': true,
-    'g': true,
+  static const List<String> keys = [
+    'a',
+    'ab',
+    'b',
+    'bb',
+    'c',
+    'csharp',
+    'd',
+    'e',
+    'eb',
+    'f',
+    'fsharp',
+    'g',
+  ];
+
+  final Map<String, bool> noteToggles = {
+    for (var note in keys) note: true,
   };
 
   bool major = true;
   bool minor = true;
-  bool _isLoading = true;
   bool _snackBarVisible = false;
   Timer? _debounceTimer;
+  List<String> presets = [];
+
   @override
   void initState() {
     super.initState();
@@ -44,81 +51,100 @@ class SettingsPageState extends State<SettingsPage> {
     super.dispose();
   }
 
-  void _updateMajorMinor() {
-    final selectedCount = _noteToggles.values.where((v) => v).length;
-    if (selectedCount == 1) {
-      major = true;
-      minor = true;
-    }
-  }
-
-  void debouncedSaveSettings() {
-    _debounceTimer?.cancel();
-    _debounceTimer = Timer(const Duration(milliseconds: 300), () {
-      saveSettings(); // call the actual save method after 300ms
-    });
-  }
-
   Future<void> loadSettings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
+    final prefs = await SharedPreferences.getInstance();
+    final newToggles = Map<String, bool>.from(noteToggles);
+    newToggles.updateAll((key, value) => prefs.getBool(key) ?? true);
+    final newMajor = prefs.getBool('major') ?? true;
+    final newMinor = prefs.getBool('minor') ?? true;
+    final rawPresets = prefs.getStringList('presets') ?? [];
+    presets = rawPresets;
 
-      final newToggles = Map<String, bool>.from(_noteToggles);
-      newToggles.updateAll((key, value) => prefs.getBool(key) ?? true);
-      final newMajor = prefs.getBool('major') ?? true;
-      final newMinor = prefs.getBool('minor') ?? true;
-
-      if (mounted) {
-        setState(() {
-          _noteToggles.clear();
-          _noteToggles.addAll(newToggles);
-          major = newMajor;
-          minor = newMinor;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Error loading settings: $e');
+    if (mounted) {
+      setState(() {
+        noteToggles.clear();
+        noteToggles.addAll(newToggles);
+        major = newMajor;
+        minor = newMinor;
+      });
     }
   }
 
   Future<void> saveSettings() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final toggles = Map<String, bool>.from(_noteToggles);
-
-      for (final entry in toggles.entries) {
-        try {
-          bool valueToSave = entry.value;
-          await prefs.setBool(entry.key, valueToSave);
-        } catch (e) {
-          debugPrint('Error saving ${entry.key}: $e');
-        }
-      }
-      await prefs.setBool('major', major);
-      await prefs.setBool('minor', minor);
-    } catch (e) {
-      debugPrint('Error saving settings: $e');
+    final prefs = await SharedPreferences.getInstance();
+    for (final entry in noteToggles.entries) {
+      await prefs.setBool(entry.key, entry.value);
     }
+    await prefs.setBool('major', major);
+    await prefs.setBool('minor', minor);
+  }
+
+  Future<void> savePreset(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    final presetKey = 'preset_$name';
+    final presetData = {
+      'notes':
+          noteToggles.entries.where((e) => e.value).map((e) => e.key).toList(),
+      'major': major,
+      'minor': minor,
+    };
+    await prefs.setString(presetKey, jsonEncode(presetData));
+
+    if (!presets.contains(name)) {
+      setState(() {
+        presets.add(name);
+      });
+      await prefs.setStringList('presets', presets);
+    }
+  }
+
+  Future<void> loadPreset(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    final presetKey = 'preset_$name';
+    final jsonString = prefs.getString(presetKey);
+    if (jsonString == null) return;
+
+    final Map<String, dynamic> presetData = jsonDecode(jsonString);
+    final selectedNotes = List<String>.from(presetData['notes'] ?? []);
+    final newMajor = presetData['major'] ?? true;
+    final newMinor = presetData['minor'] ?? true;
+
+    setState(() {
+      noteToggles.updateAll((key, _) => selectedNotes.contains(key));
+      major = newMajor;
+      minor = newMinor;
+    });
+
+    debouncedSaveSettings();
+  }
+
+  void deletePreset(String name) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('preset_$name');
+    setState(() {
+      presets.remove(name);
+    });
+    await prefs.setStringList('presets', presets);
+  }
+
+  void debouncedSaveSettings() {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 300), saveSettings);
   }
 
   void _showWarning(BuildContext context, String message) {
     if (_snackBarVisible) return;
-
     _snackBarVisible = true;
+// warning messages to tell the user they cant deselect everything (or else the app breaks duh)
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(message),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-        ),
-      ).closed.then((_) {
+      ..showSnackBar(SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      )).closed.then((_) {
         if (mounted) {
           setState(() {
             _snackBarVisible = false;
@@ -127,30 +153,109 @@ class SettingsPageState extends State<SettingsPage> {
       });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return FutureBuilder(
-      future: SharedPreferences.getInstance(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-        if (_isLoading) {
-          final prefs = snapshot.data!;
-          _noteToggles.updateAll((k, _) => prefs.getBool(k) ?? true);
-          major = prefs.getBool('major') ?? true;
-          minor = prefs.getBool('minor') ?? true;
-          _isLoading = false;
-        }
+  void openPresetsDialog(BuildContext context) {
+    final TextEditingController presetController = TextEditingController();
 
-        return buildSettingsContent(context);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, setDialogState) {
+          return AlertDialog(
+            title: Text(
+              'Presets',
+              style: TextStyle(
+                color: Theme.of(context).brightness == Brightness.dark
+                    ? Colors.white
+                    : Colors
+                        .black, // for some reason light theme displays this text as white..
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (presets.isNotEmpty)
+                  ...presets.map((presetName) {
+                    return ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                          vertical: 2, horizontal: 0),
+                      title: Text(presetName),
+                      trailing: IconButton(
+                        icon: Icon(
+                          Icons.delete,
+                          color: Theme.of(context).brightness ==
+                                  Brightness
+                                      .dark // changes based on theme so it doesnt look weird
+                              ? Colors.red
+                              : Colors.red[800],
+                        ),
+                        onPressed: () async {
+                          deletePreset(presetName);
+                          setDialogState(() {});
+                        },
+                      ),
+                      onTap: () {
+                        loadPreset(presetName);
+                        Navigator.pop(context);
+                      },
+                    );
+                  })
+                else
+                  const Text("No presets saved."),
+                const Divider(),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: presetController,
+                        decoration: const InputDecoration(
+                          labelText: 'Preset Name',
+                          contentPadding: EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        onSubmitted: (name) async {
+                          final trimmedName = name.trim();
+                          if (trimmedName.isNotEmpty &&
+                              !presets.contains(trimmedName)) {
+                            await savePreset(trimmedName);
+                            presetController.clear();
+                            setDialogState(() {});
+                          }
+                        },
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.only(left: 8.0),
+                      child: IconButton(
+                        icon: const Icon(Icons.save),
+                        onPressed: () async {
+                          final name = presetController.text.trim();
+                          if (name.isNotEmpty && !presets.contains(name)) {
+                            await savePreset(name);
+                            presetController.clear();
+                            setDialogState(() {});
+                          }
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: const Text("Close"),
+              ),
+            ],
+          );
+        });
       },
     );
   }
 
-  Widget buildSettingsContent(BuildContext context) {
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Configuration'),
@@ -159,6 +264,10 @@ class SettingsPageState extends State<SettingsPage> {
             icon: const Icon(Icons.brightness_6),
             onPressed: widget.toggleTheme,
           ),
+          IconButton(
+            icon: const Icon(Icons.tune),
+            onPressed: () => openPresetsDialog(context),
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -166,43 +275,33 @@ class SettingsPageState extends State<SettingsPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            ..._noteToggles.entries.map((entry) {
+            ...noteToggles.entries.map((entry) {
               return GestureDetector(
                 onLongPress: () {
-                  final selectedCount =
-                      _noteToggles.values.where((v) => v).length;
-
                   setState(() {
-                    // long press to select all scales if only one is marked
-                    if (selectedCount == 1 && _noteToggles[entry.key] == true) {
-                      _noteToggles
-                          .updateAll((_, __) => true); // select every scale
+                    final selectedCount =
+                        noteToggles.values.where((v) => v).length;
+                    if (selectedCount == 1 && entry.value) {
+                      noteToggles.updateAll((_, __) => true);
                     } else {
-                      // toggle
-                      _noteToggles.updateAll((k, _) => k == entry.key);
+                      noteToggles.updateAll((k, _) => k == entry.key);
                     }
-
-                    _updateMajorMinor();
+                    debouncedSaveSettings();
                   });
-                  debouncedSaveSettings();
                 },
                 child: SwitchListTile(
                   title: Text(_formatNoteLabel(entry.key)),
                   value: entry.value,
                   onChanged: (bool value) {
-                    int trueCount = _noteToggles.values.where((v) => v).length;
-
+                    final trueCount = noteToggles.values.where((v) => v).length;
                     if (!value && trueCount <= 1) {
                       _showWarning(
                           context, 'At least one key must be selected.');
                       return;
                     }
-
                     setState(() {
-                      _noteToggles[entry.key] = value;
-                      _updateMajorMinor();
+                      noteToggles[entry.key] = value;
                     });
-
                     debouncedSaveSettings();
                   },
                 ),
@@ -213,23 +312,8 @@ class SettingsPageState extends State<SettingsPage> {
               title: const Text('Major'),
               value: major,
               onChanged: (bool value) {
-                final selectedCount =
-                    _noteToggles.values.where((v) => v).length;
-
                 setState(() {
-                  if (selectedCount == 1) {
-                    _showWarning(context,
-                        'You must have more than one scale to generate.');
-                    major = true;
-                    minor = true;
-                  } else {
-                    if (!value && !minor) {
-                      major = false;
-                      minor = true;
-                    } else {
-                      major = value;
-                    }
-                  }
+                  major = value;
                 });
                 debouncedSaveSettings();
               },
@@ -238,23 +322,8 @@ class SettingsPageState extends State<SettingsPage> {
               title: const Text('Minor'),
               value: minor,
               onChanged: (bool value) {
-                final selectedCount =
-                    _noteToggles.values.where((v) => v).length;
-
                 setState(() {
-                  if (selectedCount == 1) {
-                    _showWarning(context,
-                        'You must have more than one scale to generate.');
-                    major = true;
-                    minor = true;
-                  } else {
-                    if (!value && !major) {
-                      minor = false;
-                      major = true;
-                    } else {
-                      minor = value;
-                    }
-                  }
+                  minor = value;
                 });
                 debouncedSaveSettings();
               },

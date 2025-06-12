@@ -6,9 +6,10 @@ class AudioPlayerManager {
   factory AudioPlayerManager() => _instance;
 
   final AudioPlayer _player = AudioPlayer();
-  final double _defaultVolume = 0.60;
+  final double _defaultVolume =
+      0.65; // the audio files are too loud cause i messed up!!
 
-  final Map<String, String> _fileMap = {
+  final Map<String, String> fileMap = {
     'A': 'a.mp3',
     'Ab': 'ab.mp3',
     'B': 'b.mp3',
@@ -23,7 +24,8 @@ class AudioPlayerManager {
     'G': 'g.mp3',
   };
 
-  final Map<String, String> _enharmonics = {
+  final Map<String, String> noteEquivs = {
+    // enharmonics and converting ascii characters
     'A♭': 'Ab',
     'G♯': 'Ab',
     'B♭': 'Bb',
@@ -39,25 +41,17 @@ class AudioPlayerManager {
     await _player.stop();
   }
 
-  String? _getFileForNote(String note) {
-    return _fileMap[note] ?? _fileMap[_enharmonics[note] ?? ''];
-  }
-
   Future<void> playAudio(String note) async {
-    final audioFile = _getFileForNote(note);
+    final audioFile = fileMap[note] ?? fileMap[noteEquivs[note] ?? ''];
     if (audioFile == null) {
       debugPrint('Unrecognized note: $note');
       return;
     }
 
-    try {
-      await stopAudio();
-      await _player.setSource(AssetSource(audioFile));
-      await _player.setReleaseMode(ReleaseMode.loop);
-      await _player.setVolume(_defaultVolume);
-      await _player.resume();
-    } catch (e) {
-      debugPrint('Audio playback error: $e');
-    }
+    await stopAudio();
+    await _player.setSource(AssetSource(audioFile));
+    await _player.setReleaseMode(ReleaseMode.loop);
+    await _player.setVolume(_defaultVolume);
+    await _player.resume();
   }
 }
